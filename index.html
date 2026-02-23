@@ -37,72 +37,58 @@ button {
 
 <div id="output"></div>
 
+
+
 <script>
 
-// ---------- Speech Recognition ----------
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const recognition = new SpeechRecognition();
 recognition.lang = 'en-IN';
 recognition.interimResults = false;
+recognition.continuous = false;
 
 function startListening() {
-    recognition.start();
+    speakTelugu("చెప్పండి, నేను వింటున్నాను.");
+    setTimeout(() => recognition.start(), 800);
 }
 
-recognition.onresult = async function(event) {
+recognition.onresult = function(event) {
     const query = event.results[0][0].transcript;
-    document.getElementById("output").innerHTML = "You asked: " + query + "<br><br>Searching...";
-
     fetchWikipedia(query);
 };
 
-// ---------- Fetch Wikipedia Summary ----------
 async function fetchWikipedia(query) {
+    speakTelugu("శోధిస్తున్నాను...");
+
     try {
         const response = await fetch(
             `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`
         );
 
-        if (!response.ok) {
-            throw new Error("Not found");
-        }
-
         const data = await response.json();
 
         if (data.extract) {
-            translateToTelugu(data.extract);
+            // LIMIT TEXT LENGTH (important for speed)
+            const shortText = data.extract.split('. ').slice(0, 2).join('. ') + ".";
+            speakTelugu(shortText);
         } else {
-            speakTelugu("క్షమించండి, సమాచారం లభించలేదు.");
+            speakTelugu("సమాచారం లభించలేదు.");
         }
 
     } catch (error) {
-        speakTelugu("క్షమించండి, ఆ విషయం గురించి నాకు సమాచారం లేదు.");
+        speakTelugu("క్షమించండి, సమాచారం పొందలేకపోయాను.");
     }
 }
 
-// ---------- Simple Translation (Basic) ----------
-function translateToTelugu(text) {
-
-    // Basic manual translation prefix for demo
-    const teluguIntro = "ఈ విషయంపై సమాచారం ఇలా ఉంది: ";
-
-    const teluguText = teluguIntro + text;
-
-    document.getElementById("output").innerHTML = teluguText;
-
-    speakTelugu(teluguText);
-}
-
-// ---------- Text To Speech ----------
 function speakTelugu(text) {
+    speechSynthesis.cancel(); // stop previous speech
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "te-IN";
+    utterance.rate = 1.1;   // slightly faster
+    utterance.pitch = 1;
 
     speechSynthesis.speak(utterance);
 }
 
 </script>
-
-</body>
-</html>
