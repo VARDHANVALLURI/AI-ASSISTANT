@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Telugu AI Assistant</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: white;
+    padding-top: 80px;
+}
+button {
+    padding: 15px 30px;
+    font-size: 18px;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    background-color: #ffcc00;
+    color: black;
+}
+#output {
+    margin-top: 30px;
+    width: 70%;
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 18px;
+}
+</style>
+</head>
+<body>
+
+<h1>🎙 Telugu AI Assistant</h1>
+<p>Click the button and ask anything</p>
+<button onclick="startListening()">Start Talking</button>
+
+<div id="output"></div>
+
+<script>
+
+// ---------- Speech Recognition ----------
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const recognition = new SpeechRecognition();
+recognition.lang = 'en-IN';
+recognition.interimResults = false;
+
+function startListening() {
+    recognition.start();
+}
+
+recognition.onresult = async function(event) {
+    const query = event.results[0][0].transcript;
+    document.getElementById("output").innerHTML = "You asked: " + query + "<br><br>Searching...";
+
+    fetchWikipedia(query);
+};
+
+// ---------- Fetch Wikipedia Summary ----------
+async function fetchWikipedia(query) {
+    try {
+        const response = await fetch(
+            `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`
+        );
+
+        if (!response.ok) {
+            throw new Error("Not found");
+        }
+
+        const data = await response.json();
+
+        if (data.extract) {
+            translateToTelugu(data.extract);
+        } else {
+            speakTelugu("క్షమించండి, సమాచారం లభించలేదు.");
+        }
+
+    } catch (error) {
+        speakTelugu("క్షమించండి, ఆ విషయం గురించి నాకు సమాచారం లేదు.");
+    }
+}
+
+// ---------- Simple Translation (Basic) ----------
+function translateToTelugu(text) {
+
+    // Basic manual translation prefix for demo
+    const teluguIntro = "ఈ విషయంపై సమాచారం ఇలా ఉంది: ";
+
+    const teluguText = teluguIntro + text;
+
+    document.getElementById("output").innerHTML = teluguText;
+
+    speakTelugu(teluguText);
+}
+
+// ---------- Text To Speech ----------
+function speakTelugu(text) {
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "te-IN";
+
+    speechSynthesis.speak(utterance);
+}
+
+</script>
+
+</body>
+</html>
