@@ -2,93 +2,105 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Telugu AI Assistant</title>
+<title>Ultra Fast Telugu AI Assistant</title>
+
 <style>
 body {
-    font-family: Arial, sans-serif;
-    text-align: center;
-    background: linear-gradient(135deg, #1e3c72, #2a5298);
-    color: white;
-    padding-top: 80px;
+  background: #0f172a;
+  color: #e5e7eb;
+  font-family: system-ui;
+  text-align: center;
+  padding-top: 90px;
 }
 button {
-    padding: 15px 30px;
-    font-size: 18px;
-    border: none;
-    border-radius: 30px;
-    cursor: pointer;
-    background-color: #ffcc00;
-    color: black;
+  padding: 16px 34px;
+  font-size: 18px;
+  border-radius: 30px;
+  border: none;
+  background: #22c55e;
+  color: black;
+  cursor: pointer;
 }
-#output {
-    margin-top: 30px;
-    width: 70%;
-    margin-left: auto;
-    margin-right: auto;
-    font-size: 18px;
+#status {
+  margin-top: 30px;
+  font-size: 18px;
 }
 </style>
 </head>
+
 <body>
 
-<h1>🎙 Telugu AI Assistant</h1>
-<p>Click the button and ask anything</p>
-<button onclick="startListening()">Start Talking</button>
-
-<div id="output"></div>
-
-
+<h1>⚡ Telugu Voice Assistant</h1>
+<p>Fast • Free • Browser Only</p>
+<button onclick="listen()">🎙 Speak</button>
+<div id="status"></div>
 
 <script>
+// ---------------- CACHE ----------------
+const cache = {};
 
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-const recognition = new SpeechRecognition();
-recognition.lang = 'en-IN';
-recognition.interimResults = false;
-recognition.continuous = false;
+// ---------------- SPEECH RECOGNITION ----------------
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const recog = new SR();
+recog.lang = "en-IN";
+recog.continuous = false;
+recog.interimResults = false;
 
-function startListening() {
-    speakTelugu("చెప్పండి, నేను వింటున్నాను.");
-    setTimeout(() => recognition.start(), 800);
+// ---------------- START ----------------
+function listen() {
+  speak("చెప్పండి");
+  setTimeout(() => recog.start(), 400);
 }
 
-recognition.onresult = function(event) {
-    const query = event.results[0][0].transcript;
-    fetchWikipedia(query);
+// ---------------- RESULT ----------------
+recog.onresult = (e) => {
+  const q = e.results[0][0].transcript.trim();
+  document.getElementById("status").innerText = q;
+
+  if (cache[q]) {
+    speak(cache[q]);
+    return;
+  }
+
+  speak("ఒక క్షణం");
+  fetchWiki(q);
 };
 
-async function fetchWikipedia(query) {
-    speakTelugu("శోధిస్తున్నాను...");
+// ---------------- FETCH WIKI (FAST) ----------------
+async function fetchWiki(query) {
+  try {
+    const url =
+      "https://en.wikipedia.org/api/rest_v1/page/summary/" +
+      encodeURIComponent(query);
 
-    try {
-        const response = await fetch(
-            `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`
-        );
+    const r = await fetch(url);
+    const d = await r.json();
 
-        const data = await response.json();
+    if (!d.extract) throw "no data";
 
-        if (data.extract) {
-            // LIMIT TEXT LENGTH (important for speed)
-            const shortText = data.extract.split('. ').slice(0, 2).join('. ') + ".";
-            speakTelugu(shortText);
-        } else {
-            speakTelugu("సమాచారం లభించలేదు.");
-        }
+    // ULTRA SHORT (1 sentence only)
+    const oneLine = d.extract.split(". ")[0] + ".";
 
-    } catch (error) {
-        speakTelugu("క్షమించండి, సమాచారం పొందలేకపోయాను.");
-    }
+    const telugu =
+      "సంక్షిప్తంగా చెప్పాలంటే, " + oneLine;
+
+    cache[query] = telugu;
+    speak(telugu);
+
+  } catch {
+    speak("ఈ విషయం గురించి నాకు సమాచారం లేదు.");
+  }
 }
 
-function speakTelugu(text) {
-    speechSynthesis.cancel(); // stop previous speech
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "te-IN";
-    utterance.rate = 1.1;   // slightly faster
-    utterance.pitch = 1;
-
-    speechSynthesis.speak(utterance);
+// ---------------- SPEAK ----------------
+function speak(text) {
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "te-IN";
+  u.rate = 1.15;
+  speechSynthesis.speak(u);
 }
-
 </script>
+
+</body>
+</html>
